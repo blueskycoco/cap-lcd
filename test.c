@@ -16,6 +16,9 @@
 
 #define TEST_BUFFER_NUM 3
 
+#define ipu_fourcc(a,b,c,d)\
+	(((__u32)(a)<<0)|((__u32)(b)<<8)|((__u32)(c)<<16)|((__u32)(d)<<24))
+#define IPU_PIX_FMT_RGB565  ipu_fourcc('R','G','B','P') /*!< 16  RGB-5-6-5     */
 struct testbuffer
 {
 	unsigned char *start;
@@ -24,10 +27,11 @@ struct testbuffer
 };
 
 struct testbuffer buffers[TEST_BUFFER_NUM];
+int g_display_lcd = 4;
 int g_in_width = 640;
 int g_in_height = 480;
-int g_out_width = 640;
-int g_out_height = 480;
+int g_out_width = 1024;
+int g_out_height = 768;
 int g_top = 0;
 int g_left = 0;
 int g_input = 0;
@@ -204,20 +208,20 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	if (ioctl(fd_v4l, VIDIOC_S_INPUT, &g_input) < 0)
+/*	if (ioctl(fd_v4l, VIDIOC_S_INPUT, &g_input) < 0)
 	{
 		printf("VIDIOC_S_INPUT failed\n");
 		return -1;
-	}
+	}*/
 
-	crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	crop.type = V4L2_BUF_TYPE_VIDEO_OVERLAY;//V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	if (ioctl(fd_v4l, VIDIOC_G_CROP, &crop) < 0)
 	{
 		printf("VIDIOC_G_CROP failed\n");
 		return -1;
 	}
 
-	crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	crop.type = V4L2_BUF_TYPE_VIDEO_OVERLAY;//V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	crop.c.width = g_in_width;
 	crop.c.height = g_in_height;
 	crop.c.top = g_top;
@@ -228,19 +232,23 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	fmt.fmt.pix.pixelformat = g_cap_fmt;
+	fmt.type = V4L2_BUF_TYPE_VIDEO_OVERLAY;//V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	fmt.fmt.win.w.top=  g_top ;
+	fmt.fmt.win.w.left= g_left;
+	fmt.fmt.win.w.width=g_out_width;
+	fmt.fmt.win.w.height=g_out_height;
+	/*fmt.fmt.pix.pixelformat = g_cap_fmt;
 	fmt.fmt.pix.width = g_out_width;
 	fmt.fmt.pix.height = g_out_height;
 	fmt.fmt.pix.bytesperline = g_out_width;
-	fmt.fmt.pix.sizeimage = 0;
+	fmt.fmt.pix.sizeimage = 0;*/
 
 	if (ioctl(fd_v4l, VIDIOC_S_FMT, &fmt) < 0)
 	{
 		printf("set format failed\n");
 		return 0;
 	}
-
+#if 0
 	memset(&req, 0, sizeof (req));
 	req.count = TEST_BUFFER_NUM;
 	req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -251,7 +259,7 @@ int main(int argc, char **argv)
 		printf("v4l_capture_setup: VIDIOC_REQBUFS failed\n");
 		return 0;
 	}
-
+#endif
 	if (ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) < 0) {
 		return 0;
 	}
@@ -280,7 +288,40 @@ int main(int argc, char **argv)
 		printf("\t Image size = %d\n", fmt.fmt.pix.sizeimage);
 		print_pixelformat(0, fmt.fmt.pix.pixelformat);
 	}
-	if (start_capturing(fd_v4l) < 0)
+
+	if (ioctl(fd_v4l, VIDIOC_S_OUTPUT, &g_display_lcd) < 0)
+	{
+		printf("VIDIOC_S_OUTPUT failed\n");
+	}
+	struct v4l2_framebuffer fb_v4l2;
+	memset(&fb_v4l2, 0, sizeof(fb_v4l2));
+	fb_v4l2.fmt.width = vinfo.xres;
+	fb_v4l2.fmt.height = vinfo.yres;
+	fb_v4l2.fmt.pixelformat = IPU_PIX_FMT_RGB565;
+	fb_v4l2.fmt.bytesperline = 2 * fb_v4l2.fmt.width;
+	fb_v4l2.flags = V4L2_FBUF_FLAG_PRIMARY;
+	fb_v4l2.base = (void *) finfo.smem_start +
+				finfo.line_length*vinfo.yoffset;
+	
+	if (ioctl(fd_v4l, VIDIOC_S_FBUF, &fb_v4l2) < 0)
+	{
+		printf("set framebuffer failed\n");
+		
+	}
+	if (ioctl(fd_v4l, VIDIOC_G_FBUF, &fb_v4l2) < 0) {
+		printf("get framebuffer failed\n");
+		
+	}
+int overlay=1;	
+	if (ioctl(fd_v4l, VIDIOC_OVERLAY, &overlay) < 0) {
+		printf("VIDIOC_OVERLAY start failed\n");
+	}
+		sleep(3600);
+	
+		
+		
+		
+		if (start_capturing(fd_v4l) < 0)
 	{
 		printf("start_capturing failed\n");
 		return -1;
