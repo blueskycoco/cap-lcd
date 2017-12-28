@@ -209,7 +209,7 @@ mxc_v4l_overlay_setup(struct v4l2_format *fmt)
 		printf("VIDIOC_S_PARM failed\n");
 		return TFAIL;
 	}
-
+/*
 	parm.parm.capture.timeperframe.numerator = 0;
 	parm.parm.capture.timeperframe.denominator = 0;
 
@@ -228,7 +228,7 @@ mxc_v4l_overlay_setup(struct v4l2_format *fmt)
 	{
 		printf("set control failed\n");
 		return TFAIL;
-	}
+	}*/
 
 	crop.type = V4L2_BUF_TYPE_VIDEO_OVERLAY;
 	crop.c.left = g_sensor_left;
@@ -247,7 +247,7 @@ mxc_v4l_overlay_setup(struct v4l2_format *fmt)
 		return TFAIL;
 	}
 
-	if (ioctl(fd_v4l, VIDIOC_G_FMT, fmt) < 0)
+	/*if (ioctl(fd_v4l, VIDIOC_G_FMT, fmt) < 0)
 	{
 		printf("get format failed\n");
 		return TFAIL;
@@ -257,7 +257,7 @@ mxc_v4l_overlay_setup(struct v4l2_format *fmt)
 	{
 		printf("VIDIOC_G_STD failed\n");
 		return TFAIL;
-	}
+	}*/
 
 	return TPASS;
 }
@@ -287,13 +287,13 @@ main(int argc, char **argv)
 		return TFAIL;
 	}
 
-	if (ioctl(fd_v4l, VIDIOC_DBG_G_CHIP_IDENT, &chip))
+	/*if (ioctl(fd_v4l, VIDIOC_DBG_G_CHIP_IDENT, &chip))
 	{
 		printf("VIDIOC_DBG_G_CHIP_IDENT failed.\n");
 		return TFAIL;
 	}
 	printf("sensor chip is %s\n", chip.match.name);
-
+*/
 	if ((fd_fb_0 = open(fb_device_0, O_RDWR )) < 0)	{
 		printf("Unable to open frame buffer 0\n");
 		return TFAIL;
@@ -338,13 +338,13 @@ printf("S_OUTPUT %s %d\r\n", fb0_fix.id, g_display_lcd);
 	memset(&fb_v4l2, 0, sizeof(fb_v4l2));
 
 	if (!g_overlay) {
-		g_alpha.alpha = 255;
+		/*g_alpha.alpha = 255;
 		g_alpha.enable = 1;
 		if (ioctl(fd_fb_0, MXCFB_SET_GBL_ALPHA, &g_alpha) < 0) {
 			printf("Set global alpha failed\n");
 			close(fd_fb_0);
 			return TFAIL;
-		}
+		}*/
 
 		if (g_alpha_mode) {
 		}
