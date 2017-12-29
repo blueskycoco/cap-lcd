@@ -20,15 +20,15 @@
 	(((__u32)(a)<<0)|((__u32)(b)<<8)|((__u32)(c)<<16)|((__u32)(d)<<24))
 #define IPU_PIX_FMT_RGB565  ipu_fourcc('R','G','B','P') /*!< 16  RGB-5-6-5     */
 
-int g_display_lcd = 4;
-int g_in_width = 1024;
-int g_in_height = 768;
-int g_out_width = 1024;
-int g_out_height = 768;
+int g_display_lcd = 0;
+int g_in_width = 640;
+int g_in_height = 480;
+int g_out_width = 640;
+int g_out_height = 480;
 int g_top = 0;
 int g_left = 0;
 int g_camera_framerate = 30;
-int g_capture_mode = 1;
+int g_capture_mode = 0;
 char g_v4l_device[100] = "/dev/video0";
 int main(int argc, char **argv)
 {
@@ -57,7 +57,6 @@ int main(int argc, char **argv)
 	if (ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) < 0) {
 		return 0;
 	}
-
 	if (ioctl(fd_v4l, VIDIOC_S_OUTPUT, &g_display_lcd) < 0)
 	{
 		printf("VIDIOC_S_OUTPUT failed\n");
