@@ -14,7 +14,7 @@
 #include <malloc.h>
 #include <linux/fb.h>
 
-#define TEST_BUFFER_NUM 3
+#define TEST_BUFFER_NUM 30
 
 struct testbuffer
 {
@@ -33,7 +33,7 @@ int g_left = 0;
 int g_input = 0;
 int g_capture_count = 100;
 int g_cap_fmt = V4L2_PIX_FMT_YUYV;
-int g_camera_framerate = 30;
+int g_camera_framerate = 15;
 int g_capture_mode = 0;
 char g_v4l_device[100] = "/dev/video0";
 static char *fbp=NULL;
@@ -294,7 +294,7 @@ int main(int argc, char **argv)
 			printf("VIDIOC_DQBUF failed.\n");
 		}
 
-		fwrite(buffers[buf.index].start, fmt.fmt.pix.sizeimage, 1, fd_y_file);
+		//fwrite(buffers[buf.index].start, fmt.fmt.pix.sizeimage, 1, fd_y_file);
 		process_image(buffers[buf.index].start);
 		if (count >= TEST_BUFFER_NUM) {
 			if (ioctl (fd_v4l, VIDIOC_QBUF, &buf) < 0) {
