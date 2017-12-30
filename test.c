@@ -20,11 +20,11 @@
 	(((__u32)(a)<<0)|((__u32)(b)<<8)|((__u32)(c)<<16)|((__u32)(d)<<24))
 #define IPU_PIX_FMT_RGB565  ipu_fourcc('R','G','B','P') /*!< 16  RGB-5-6-5     */
 
-int g_display_lcd = 0;
-int g_in_width = 640;
-int g_in_height = 480;
-int g_out_width = 640;
-int g_out_height = 480;
+int g_display_lcd = 4;
+int g_in_width = 1024;
+int g_in_height = 768;
+int g_out_width = 1024;
+int g_out_height = 768;
 int g_top = 0;
 int g_left = 0;
 int g_camera_framerate = 30;
