@@ -45,8 +45,8 @@ extern "C"{
 
 #define IPU_PIX_FMT_YUYV    ipu_fourcc('Y','U','Y','V') /*!< 16 YUV 4:2:2 */
 
-static int g_width = 2592;
-static int g_height = 1944;
+static int g_width = 640;
+static int g_height = 480;
 static int g_top = 0;
 static int g_left = 0;
 static unsigned long g_pixelformat = IPU_PIX_FMT_YUYV;
@@ -112,7 +112,7 @@ int v4l_capture_test(int fd_v4l)
 	struct v4l2_format fmt;
 	int fd_still = 0, ret = 0;
 	char *buf1;
-	char still_file[100] = "./still.yuv";
+	char still_file[100] = "./test.yuv";
 
 	if ((fd_still = open(still_file, O_RDWR | O_CREAT | O_TRUNC, 0x0666)) < 0)
 	{
@@ -140,11 +140,13 @@ int v4l_capture_test(int fd_v4l)
 		goto exit0;
 
 	memset(buf1, 0, fmt.fmt.pix.sizeimage);
-
+printf("begin read data\r\n");
+	sleep(3);
 	if (read(fd_v4l, buf1, fmt.fmt.pix.sizeimage) != fmt.fmt.pix.sizeimage) {
 		printf("v4l2 read error.\n");
 		goto exit0;
 	}
+printf("end read data\r\n");
 
 	write(fd_still, buf1, fmt.fmt.pix.sizeimage);
 
