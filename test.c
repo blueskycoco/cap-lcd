@@ -14,7 +14,7 @@
 #include <malloc.h>
 #include <linux/fb.h>
 
-#define TEST_BUFFER_NUM 3
+#define TEST_BUFFER_NUM 30
 
 #define ipu_fourcc(a,b,c,d)\
 	(((__u32)(a)<<0)|((__u32)(b)<<8)|((__u32)(c)<<16)|((__u32)(d)<<24))
