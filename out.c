@@ -55,8 +55,8 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 
 	if (ioctl(fd_v4l, VIDIOC_ENUMOUTPUT, &output) >= 0) {
 		//out_addr = output.reserved[0];
-		printf("V4L output %d (0x%08x): %s\n",
-		       output.index, output.reserved[0], output.name);
+		//printf("V4L output %d (0x%08x): %s\n",
+		//       output.index, output.reserved[0], output.name);
 	} else {
 		perror("VIDIOC_ENUMOUTPUT");
 		return -1;
@@ -71,12 +71,12 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 		return -1;
 	}
 
-	printf("Video input format: %dx%d\n", width, height);
+	//printf("Video input format: %dx%d\n", width, height);
 	
 	req.count = buf_num;
 	req.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 	req.memory = V4L2_MEMORY_MMAP;
-	printf("request count %d\n", req.count);
+	//printf("request count %d\n", req.count);
 
 	if (ioctl(fd_v4l, VIDIOC_REQBUFS, &req) < 0) {
 		perror("VIDIOC_REQBUFS");
@@ -132,9 +132,9 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 	format.fmt.win.w.top = 0;
 	format.fmt.win.w.width = width;
 	format.fmt.win.w.height = height;
-	printf("win.w.l/t/w/h = %d/%d/%d/%d\n", format.fmt.win.w.left,
-	       format.fmt.win.w.top,
-	       format.fmt.win.w.width, format.fmt.win.w.height);
+	//printf("win.w.l/t/w/h = %d/%d/%d/%d\n", format.fmt.win.w.left,
+	//       format.fmt.win.w.top,
+	//       format.fmt.win.w.width, format.fmt.win.w.height);
 	if (ioctl(fd_v4l, VIDIOC_S_FMT, &format) < 0) {
 		perror("VIDIOC_S_FMT output overlay");
 		return -1;
@@ -146,8 +146,8 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 	crop.c.top = 0;
 	crop.c.width = width;
 	crop.c.height = height;
-	printf("crop.c.l/t/w/h = %d/%d/%d/%d\n", crop.c.left,
-	       crop.c.top, crop.c.width, crop.c.height);
+	//printf("crop.c.l/t/w/h = %d/%d/%d/%d\n", crop.c.left,
+	//       crop.c.top, crop.c.width, crop.c.height);
 	if (ioctl(fd_v4l, VIDIOC_S_CROP, &crop) < 0) {
 		perror("VIDIOC_S_CROP");
 		return -1;

@@ -12,9 +12,10 @@
 int main(int argc, char **argv)
 {
 	struct buffer **in_buf=NULL, **out_buf=NULL;
-	int i=0;
-	int fd_in = video_in_init(WIDTH, HEIGHT, in_buf, BUF_NUM); 
-	int fd_out = video_out_init(WIDTH, HEIGHT, out_buf, BUF_NUM);
+	int i=0,fd_in=0,fd_out=0;
+	fd_in = video_in_init(WIDTH, HEIGHT, in_buf, BUF_NUM); 
+	if (fd_in > 0 && in_buf != NULL)
+		fd_out = video_out_init(WIDTH, HEIGHT, out_buf, BUF_NUM);
 
 	if (fd_in == -1 || fd_out == -1
 			|| in_buf == NULL
