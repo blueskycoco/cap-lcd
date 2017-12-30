@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <unistd.h>
 #include <linux/videodev2.h>
 #include "buf.h"
 #include "in.h"
@@ -11,17 +12,31 @@
 #define BUF_NUM 6
 int main(int argc, char **argv)
 {
-	struct buffer **in_buf=NULL, **out_buf=NULL;
+	struct buffer *in_buf=NULL, *out_buf=NULL;
 	int i=0,fd_in=0,fd_out=0;
-	fd_in = video_in_init(WIDTH, HEIGHT, in_buf, BUF_NUM); 
-	if (fd_in > 0 && in_buf != NULL)
-		fd_out = video_out_init(WIDTH, HEIGHT, out_buf, BUF_NUM);
-
-	if (fd_in == -1 || fd_out == -1
-			|| in_buf == NULL
-			|| out_buf == NULL)
+	fd_in = video_in_init(WIDTH, HEIGHT, &in_buf, BUF_NUM); 
+	if (fd_in > 0 && in_buf != NULL) {
+		fd_out = video_out_init(WIDTH, HEIGHT, &out_buf, BUF_NUM);
+	} else {
+		if (fd_in <= 0)
+			printf("video in fd invalid\r\n");
+		else
+			close(fd_in);
+		if (in_buf == NULL)
+			printf("video in buf invalid\r\n");
 		return -1;
+	}
 
+	if (fd_out <= 0 || out_buf == NULL) {
+		if (fd_out <= 0)
+			printf("video out fd invalid\r\n");
+		else
+			close(fd_out);
+		if (out_buf == NULL)
+			printf("video out buf invalid\r\n");
+		video_in_deinit(fd_in, &in_buf, BUF_NUM);
+		return -1;
+	}
 	while (1) {
 		struct v4l2_buffer buf_in,buf_out;
 		memset(&buf_in, 0, sizeof (buf_in));
@@ -47,7 +62,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		memcpy(out_buf[buf_out.index]->start, in_buf[buf_in.index]->start, buf_in.length);
+		memcpy(out_buf[buf_out.index].start, in_buf[buf_in.index].start, buf_in.length);
 
 		if (ioctl(fd_out, VIDIOC_QBUF, &buf_out) < 0) {
 			printf("VIDIOC_QBUF failed\n");
@@ -72,7 +87,7 @@ int main(int argc, char **argv)
 
 	}
 	
-	video_out_deinit(fd_out, out_buf, BUF_NUM);
-	video_out_deinit(fd_in, in_buf, BUF_NUM);
+	video_out_deinit(fd_out, &out_buf, BUF_NUM);
+	video_in_deinit(fd_in, &in_buf, BUF_NUM);
 	return 0;	
 }

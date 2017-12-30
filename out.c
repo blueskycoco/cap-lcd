@@ -35,17 +35,17 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 	int out_idx = 1;
 	if ((fd_v4l = open(v4l_devname, O_RDWR, 0)) < 0) {
 		printf("unable to open %s for output, continue searching "
-			"device.\n", v4l_devname);
+				"device.\n", v4l_devname);
 		return -1;
 	}
 	
-	out_buf = calloc(buf_num, sizeof(struct buffer *));
+	*out_buf = (struct buffer *)calloc(buf_num, sizeof(struct buffer));
 
-	if (!out_buf) {
+	if (!*out_buf) {
 		perror("insufficient buffer memory");
 		return -1;
 	}
-	
+
 	if (ioctl(fd_v4l, VIDIOC_S_OUTPUT, &out_idx) < 0) {
 		perror("failed to set output");
 		return -1;
@@ -72,7 +72,7 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 	}
 
 	//printf("Video input format: %dx%d\n", width, height);
-	
+
 	req.count = buf_num;
 	req.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 	req.memory = V4L2_MEMORY_MMAP;
@@ -99,17 +99,17 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 			return -1;
 		}
 
-		out_buf[i] = (struct buffer *)malloc(sizeof(struct buffer));
-		out_buf[i]->length = buf.length;
-		out_buf[i]->offset = (size_t) buf.m.offset;
-		out_buf[i]->start = mmap(NULL /* start anywhere */ ,
-					     out_buf[i]->length,
-					     PROT_READ | PROT_WRITE,
-					     MAP_SHARED,
-					     fd_v4l,
-					     out_buf[i]->offset);
+		//out_buf[i] = (struct buffer *)malloc(sizeof(struct buffer));
+		(*out_buf)[i].length = buf.length;
+		(*out_buf)[i].offset = (size_t) buf.m.offset;
+		(*out_buf)[i].start = mmap(NULL /* start anywhere */ ,
+				(*out_buf)[i].length,
+				PROT_READ | PROT_WRITE,
+				MAP_SHARED,
+				fd_v4l,
+				(*out_buf)[i].offset);
 
-		if (out_buf[i]->start == MAP_FAILED) {
+		if ((*out_buf)[i].start == MAP_FAILED) {
 			perror("failed to mmap pxp buffer");
 			return -1;
 		}
@@ -159,16 +159,17 @@ void video_out_deinit(int fd, struct buffer **out_buf, int buf_num)
 {
 	int i=0;
 	enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-	if (ioctl(fd, VIDIOC_STREAMOFF, &type) < 0) {
-		perror("VIDIOC_STREAMOFF");
-		return ;
+	if (fd) { 
+		if (ioctl(fd, VIDIOC_STREAMOFF, &type) < 0) {
+			perror("VIDIOC_STREAMOFF");
+			return ;
+		}
+		close(fd);
 	}
-
-	for (i = 0; i < buf_num; i++)
-	{
-		munmap(out_buf[i]->start, out_buf[i]->length);
-		free(out_buf[i]);
+	if (*out_buf) {
+		for (i = 0; i < buf_num; i++) {
+			munmap((*out_buf)[i].start, (*out_buf)[i].length);
+		}
+		free(*out_buf);
 	}
-	free(out_buf);
-	close(fd);
 }

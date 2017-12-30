@@ -15,14 +15,14 @@
 #include <linux/fb.h>
 #include "buf.h"
 #include "in.h"
-static void print_pixelformat(char *prefix, int val)
-{
-	printf("%s: %c%c%c%c\n", prefix ? prefix : "pixelformat",
-			val & 0xff,
-			(val >> 8) & 0xff,
-			(val >> 16) & 0xff,
-			(val >> 24) & 0xff);
-}
+/*static void print_pixelformat(char *prefix, int val)
+  {
+  printf("%s: %c%c%c%c\n", prefix ? prefix : "pixelformat",
+  val & 0xff,
+  (val >> 8) & 0xff,
+  (val >> 16) & 0xff,
+  (val >> 24) & 0xff);
+  }*/
 int video_in_init(int width, int height, struct buffer **in_buf, int buf_num)
 {
 	char v4l_device[100] = "/dev/video0";
@@ -107,20 +107,21 @@ int video_in_init(int width, int height, struct buffer **in_buf, int buf_num)
 		printf("get format failed\n");
 		return -1;
 	}
-	else
-	{
-		printf("\t VIDEO IN Width = %d", fmt.fmt.pix.width);
-		printf("\t Height = %d", fmt.fmt.pix.height);
-		printf("\t Image size = %d\n", fmt.fmt.pix.sizeimage);
-		print_pixelformat(0, fmt.fmt.pix.pixelformat);
-	}
+	/*else
+	  {
+	  printf("\t VIDEO IN Width = %d", fmt.fmt.pix.width);
+	  printf("\t Height = %d", fmt.fmt.pix.height);
+	  printf("\t Image size = %d\n", fmt.fmt.pix.sizeimage);
+	  print_pixelformat(0, fmt.fmt.pix.pixelformat);
+	  }*/
 
-	in_buf = calloc(buf_num, sizeof(struct buffer *));
+	*in_buf = calloc(buf_num, sizeof(struct buffer));
 
-	if (!in_buf) {
+	if (!*in_buf) {
 		perror("insufficient buffer memory");
 		return -1;
 	}
+	struct buffer *p = *in_buf;
 	for (i = 0; i < buf_num; i++)
 	{
 		memset(&buf, 0, sizeof (buf));
@@ -132,13 +133,12 @@ int video_in_init(int width, int height, struct buffer **in_buf, int buf_num)
 			printf("VIDIOC_QUERYBUF error\n");
 			return -1;
 		}
-		in_buf[i] = (struct buffer *)malloc(sizeof(struct buffer));
-		in_buf[i]->length = buf.length;
-		in_buf[i]->offset = (size_t) buf.m.offset;
-		in_buf[i]->start = mmap (NULL, in_buf[i]->length,
+		p[i].length = buf.length;
+		p[i].offset = (size_t) buf.m.offset;
+		p[i].start = mmap (NULL, p[i].length,
 				PROT_READ | PROT_WRITE, MAP_SHARED,
-				fd_v4l, in_buf[i]->offset);
-		memset(in_buf[i]->start, 0xFF, in_buf[i]->length);
+				fd_v4l, p[i].offset);
+		memset(p[i].start, 0xFF, p[i].length);
 	}
 
 	for (i = 0; i < buf_num; i++)
@@ -147,7 +147,7 @@ int video_in_init(int width, int height, struct buffer **in_buf, int buf_num)
 		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf.memory = V4L2_MEMORY_MMAP;
 		buf.index = i;
-		buf.m.offset = in_buf[i]->offset;
+		buf.m.offset = p[i].offset;
 
 		if (ioctl (fd_v4l, VIDIOC_QBUF, &buf) < 0) {
 			printf("VIDIOC_QBUF error\n");
@@ -167,12 +167,16 @@ void video_in_deinit(int fd, struct buffer **in_buf, int buf_num)
 	enum v4l2_buf_type type;
 	int i;
 	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	ioctl (fd, VIDIOC_STREAMOFF, &type);
-	for (i = 0; i < buf_num; i++)
-	{
-		munmap(in_buf[i]->start, in_buf[i]->length);
-		free(in_buf[i]);
+	if (fd) {
+		ioctl (fd, VIDIOC_STREAMOFF, &type);
+		close(fd);
 	}
-	free(in_buf);
-	close(fd);
+
+	if (*in_buf) {
+		for (i = 0; i < buf_num; i++)
+		{
+			munmap((*in_buf)[i].start, (*in_buf)[i].length);
+		}
+		free(*in_buf);
+	}
 }
