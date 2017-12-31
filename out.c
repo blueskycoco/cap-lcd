@@ -32,6 +32,7 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 	struct v4l2_framebuffer fb;
 	struct v4l2_crop crop;
 	struct v4l2_buffer buf;
+	struct v4l2_control vc;
 	int out_idx = 1;
 	int tfd;
 	char buf1[8];
@@ -45,6 +46,12 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 		return -1;
 	}
 	
+	vc.id = V4L2_CID_PRIVATE_BASE;
+	vc.value = 180;
+	if (ioctl(fd_v4l, VIDIOC_S_CTRL, &vc) < 0) {
+		perror("VIDIOC_S_CTRL");
+		return -1;
+	}
 	*out_buf = (struct buffer *)calloc(buf_num, sizeof(struct buffer));
 
 	if (!*out_buf) {

@@ -4,6 +4,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <linux/videodev2.h>
+#include <sys/errno.h>
 #include "buf.h"
 #include "in.h"
 #include "out.h"
@@ -39,6 +40,25 @@ int main(int argc, char **argv)
 	}
 	while (1) {
 		struct v4l2_buffer buf_in,buf_out;
+		fd_set fds;
+		struct timeval tv;
+		int r;  
+
+		FD_ZERO(&fds);
+		FD_SET(fd_in, &fds);
+		tv.tv_sec = 2;
+		tv.tv_usec = 0;
+
+		r = select(fd_in+1, &fds, NULL, NULL, &tv);
+		if(-1 == r){  
+			if(EINTR == errno){  
+				printf("select erro! \n");  
+			}  
+		}  
+		else if(0 == r){  
+			printf("select in timeout! \n"); 
+		}  
+
 		memset(&buf_in, 0, sizeof (buf_in));
 		buf_in.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf_in.memory = V4L2_MEMORY_MMAP;
@@ -47,6 +67,20 @@ int main(int argc, char **argv)
 			break;
 		}
 
+		FD_ZERO(&fds);
+		FD_SET(fd_out, &fds);
+		tv.tv_sec = 2;
+		tv.tv_usec = 0;
+
+		r = select(fd_out+1, NULL, &fds, NULL, &tv);
+		if(-1 == r){  
+			if(EINTR == errno){  
+				printf("select erro! \n");  
+			}  
+		}  
+		else if(0 == r){  
+			printf("select out timeout! \n"); 
+		}  
 		buf_out.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 		buf_out.memory = V4L2_MEMORY_MMAP;
 		if (i < BUF_NUM) {
@@ -63,12 +97,11 @@ int main(int argc, char **argv)
 		}
 
 		memcpy(out_buf[buf_out.index].start, in_buf[buf_in.index].start, buf_in.length);
-
 		if (ioctl(fd_out, VIDIOC_QBUF, &buf_out) < 0) {
 			printf("VIDIOC_QBUF failed\n");
 			break;
 		}
-		
+
 		if (i == 2) {
 			int type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 			if (ioctl(fd_out, VIDIOC_STREAMON, &type) < 0) {
@@ -76,17 +109,17 @@ int main(int argc, char **argv)
 				break;
 			}
 		}
-		
+
 		if (i<=BUF_NUM)
 			i++;
-		
+
 		if (ioctl (fd_in, VIDIOC_QBUF, &buf_in) < 0) {
 			printf("VIDIOC_QBUF failed\n");
 			break;
 		}
 
 	}
-	
+
 	video_out_deinit(fd_out, &out_buf, BUF_NUM);
 	video_in_deinit(fd_in, &in_buf, BUF_NUM);
 	return 0;	
