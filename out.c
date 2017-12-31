@@ -33,6 +33,12 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 	struct v4l2_crop crop;
 	struct v4l2_buffer buf;
 	int out_idx = 1;
+	int tfd;
+	char buf1[8];
+	tfd = open("/dev/tty0", O_RDWR);
+	sprintf(buf1, "%s", "\033[9;0]");
+	write(tfd, buf1, 7);
+	close(tfd);
 	if ((fd_v4l = open(v4l_devname, O_RDWR, 0)) < 0) {
 		printf("unable to open %s for output, continue searching "
 				"device.\n", v4l_devname);
@@ -142,7 +148,7 @@ int video_out_init(int width, int height, struct buffer **out_buf, int buf_num)
 
 	/* Set cropping window */
 	crop.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_OVERLAY;
-	crop.c.left = 0;
+	crop.c.left = 80;
 	crop.c.top = 0;
 	crop.c.width = width;
 	crop.c.height = height;

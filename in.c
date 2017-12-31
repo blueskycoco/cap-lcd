@@ -45,7 +45,7 @@ int video_in_init(int width, int height, struct buffer **in_buf, int buf_num)
 	parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	parm.parm.capture.timeperframe.numerator = 1;
 	parm.parm.capture.timeperframe.denominator = 30;
-	parm.parm.capture.capturemode = 1;
+	parm.parm.capture.capturemode = 0;
 
 	if (ioctl(fd_v4l, VIDIOC_S_PARM, &parm) < 0)
 	{
