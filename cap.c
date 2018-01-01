@@ -179,6 +179,7 @@ exit0:
 		return -1;
 	}
 	printf("begin mmap\r\n");
+	bufs[i].length = buf.length;
 	bufs[i].start = mmap (NULL, buf.length,
 			PROT_READ | PROT_WRITE, MAP_SHARED,
 			fd_v4l, buf.m.offset);
@@ -209,7 +210,7 @@ exit0:
 		printf("VIDIOC_DQBUF failed.\n");
 	}
 	printf("begin write\r\n");
-	write(fd_still, bufs[buf.index].start, fmt.fmt.pix.sizeimage);
+	write(fd_still, bufs[buf.index].start, bufs[buf.index].length);
 	printf("begin stream off\r\n");
 	ioctl(fd_v4l, VIDIOC_QBUF, &buf);
 	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
