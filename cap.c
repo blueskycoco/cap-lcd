@@ -45,8 +45,8 @@ extern "C"{
 
 #define IPU_PIX_FMT_YUYV    ipu_fourcc('Y','U','Y','V') /*!< 16 YUV 4:2:2 */
 
-static int g_width = 640;
-static int g_height = 480;
+static int g_width = 2592;
+static int g_height = 1944;
 static int g_top = 0;
 static int g_left = 0;
 static unsigned long g_pixelformat = IPU_PIX_FMT_YUYV;
@@ -111,7 +111,7 @@ int v4l_capture_test(int fd_v4l)
 {
 	struct v4l2_format fmt;
 	int fd_still = 0, ret = 0;
-	char *buf1;
+	//char *buf1;
 	char still_file[100] = "./test.yuv";
 
 	if ((fd_still = open(still_file, O_RDWR | O_CREAT | O_TRUNC, 0x0666)) < 0)
@@ -135,24 +135,81 @@ int v4l_capture_test(int fd_v4l)
 				(char)((fmt.fmt.pix.pixelformat & 0xFF000000) >> 24));
 	}
 
-	buf1 = (char *)malloc(fmt.fmt.pix.sizeimage);
+#if 1
+	char *buf1 = (char *)malloc(fmt.fmt.pix.sizeimage);
 	if (!buf1)
 		goto exit0;
 
 	memset(buf1, 0, fmt.fmt.pix.sizeimage);
-printf("begin read data\r\n");
-	sleep(3);
 	if (read(fd_v4l, buf1, fmt.fmt.pix.sizeimage) != fmt.fmt.pix.sizeimage) {
 		printf("v4l2 read error.\n");
 		goto exit0;
 	}
-printf("end read data\r\n");
 
 	write(fd_still, buf1, fmt.fmt.pix.sizeimage);
-
 exit0:
 	if (buf1)
 		free(buf1);
+#else
+	struct v4l2_requestbuffers req;
+	memset(&req, 0, sizeof (req));
+	req.count = 1;
+	req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	req.memory = V4L2_MEMORY_MMAP;
+
+	if (ioctl(fd_v4l, VIDIOC_REQBUFS, &req) < 0)
+	{
+		printf("v4l_capture_setup: VIDIOC_REQBUFS failed\n");
+		return -1;
+	}
+	struct v4l2_buffer buf,buf1;
+	memset(&buf, 0, sizeof (buf));
+	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.memory = V4L2_MEMORY_MMAP;
+	buf.index = 0;
+	if (ioctl(fd_v4l, VIDIOC_QUERYBUF, &buf) < 0)
+	{
+		printf("VIDIOC_QUERYBUF error\n");
+		return -1;
+	}
+	printf("begin mmap\r\n");
+	unsigned char *start = mmap (NULL, buf.length,
+			PROT_READ | PROT_WRITE, MAP_SHARED,
+			fd_v4l, buf.m.offset);
+	memset(start, 0xFF, buf.length);
+	memset(&buf, 0, sizeof (buf));
+	buf1.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf1.memory = V4L2_MEMORY_MMAP;
+	buf1.index = 0;
+	buf1.m.offset = buf.m.offset;
+
+	printf("begin qbuf\r\n");
+	if (ioctl (fd_v4l, VIDIOC_QBUF, &buf1) < 0) {
+		printf("VIDIOC_QBUF error\n");
+		return -1;
+	}
+	printf("begin stream on\r\n");
+	enum v4l2_buf_type type;
+	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	if (ioctl (fd_v4l, VIDIOC_STREAMON, &type) < 0) {
+		printf("VIDIOC_STREAMON error\n");
+		return -1;
+	}
+	printf("begin dqbuf\r\n");
+	memset(&buf, 0, sizeof (buf));
+	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.memory = V4L2_MEMORY_MMAP;
+	if (ioctl (fd_v4l, VIDIOC_DQBUF, &buf) < 0)	{
+		printf("VIDIOC_DQBUF failed.\n");
+	}
+	printf("begin write\r\n");
+	write(fd_still, start, fmt.fmt.pix.sizeimage);
+	printf("begin stream off\r\n");
+	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	ioctl (fd_v4l, VIDIOC_STREAMOFF, &type);
+	printf("begin munmap\r\n");
+	munmap(start, fmt.fmt.pix.sizeimage);
+#endif
 	close(fd_still);
 	close(fd_v4l);
 
